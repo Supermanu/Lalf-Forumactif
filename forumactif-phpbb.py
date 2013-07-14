@@ -20,7 +20,7 @@
 #       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #       MA 02110-1301, USA.
 
-import sys, logging, time
+import sys, logging
 
 try:
     import config
@@ -244,85 +244,39 @@ def get_users():
     
     save.users = []
     n = 2
-    get_connection()
-    #logging.info('Connection au forum')
-    #data = urlencode({'username': config.admin_name, 'password': config.admin_password, 'autologin': 1, 'redirect': '', 'login': 'Connexion'})
-    #request = urllib2.Request(config.rooturl + '/login.forum', data)
-    #request.add_header('User-Agent', 'Mozilla/5.0 (X11; Linux i686; rv:6.0.1) Gecko/20100101 Firefox/6.0.1')
-    #urlopener.open(request)
-    #logging.debug('Récupération du sid')
-    #sid = None
-    #for cookie in cookiejar:
-	#if cookie.name[-3:] == "sid":
-	    #sid = cookie.value
 
-    #if sid == None:
-	#logging.critical('Échec de la connection.')
-	#sys.exit(1)
-    #print sid
-    #logging.debug('Récupération du tid')
-    #d = PyQuery(url=config.rooturl+'/forum', opener=fa_opener)
-
-    #f = urlopener.open(config.rooturl+'/admin/index.forum')
-    #tid = urlparse(f.url).query
-    d = PyQuery(url=config.rooturl+'/admin/index.forum?part=users_groups&sub=users&extended_admin=1&' + tid, opener=fa_opener)
+    d = PyQuery(url=config.rooturl+'/memberlist?mode=joined&order&username', opener=fa_opener)
     result = re.search('function do_pagination_start\(\)[^\}]*start = \(start > \d+\) \? (\d+) : start;[^\}]*start = \(start - 1\) \* (\d+);[^\}]*\}', d.text())
     
     try:
         pages = int(result.group(1))
-        #print pages
         usersperpages = int(result.group(2))
-        #print usersperpages
     except:
         pages = 1
         usersperpages = 0
-    
+        
     for page in range(0,pages):
-	print page
         if page >= 1:
-	    #To avoid to be blacklisted
-	    time.sleep(45)
-	    get_connection()
-	    #logging.info('ReConnection au forum')
-	    
-	    #data = urlencode({'username': config.admin_name, 'password': config.admin_password, 'autologin': 1, 'redirect': '', 'login': 'Connexion'})
-	    #request = urllib2.Request(config.rooturl + '/login.forum', data)
-	    #request.add_header('User-Agent', 'Mozilla/5.0 (X11; Linux i686; rv:6.0.1) Gecko/20100101 Firefox/6.0.1')
-	    #urlopener.open(request)
-	    #logging.debug('Récupération du sid')
-	    #sid = None
-	    #for cookie in cookiejar:
-		#if cookie.name[-3:] == "sid":
-		    #sid = cookie.value
-
-	    #if sid == None:
-		#logging.critical('Échec de la connection.')
-		#sys.exit(1)
-	    #print sid
-	    #d = PyQuery(url=config.rooturl+'/forum', opener=fa_opener)
-
-	    #f = urlopener.open(config.rooturl+'/admin/index.forum')
-	    #logging.debug('Récupération du tid')
-            d = PyQuery(url=config.rooturl + '/admin/index.forum?part=users_groups&sub=users&extended_admin=1&start=' + str(page*usersperpages) + '&' + tid, opener=fa_opener)
-            print d.text()
-	    
+            d = PyQuery(url=config.rooturl + '/memberlist?mode=joined&order&username&start=' + str(page*usersperpages), opener=fa_opener)
+	
+	it = 0
+	alluserinthepage = 0
         for i in d('tbody tr'):
-            e = PyQuery(i)
-            id = int(re.search("&u=(\d+)&", e("td a").eq(0).attr("href")).group(1))
-            logging.debug('Récupération : membre %d', id)
+            if alluserinthepage == usersperpages:
+		break
+            if it < 5:
+		it += 1
+		continue
+	    e = pq(i)
+            id = int(re.search("/u(\d+)", e("td span a").eq(0).attr("href")).group(1))
+            alluserinthepage += 1
             
-            date = e("td").eq(3).text().split(" ")
-            date = time.mktime(time.struct_time((int(date[2]),month[date[1]],int(date[0]),0,0,0,0,0,0)))
-            
-            lastvisit = e("td").eq(4).text()
-            
-            if lastvisit != "":
-                lastvisit = lastvisit.split(" ")
-                lastvisit = time.mktime(time.struct_time((int(lastvisit[2]),month[lastvisit[1]],int(lastvisit[0]),0,0,0,0,0,0)))
-            else:
-                lastvisit = 0
-            
-            save.users.append({'id': id, 'newid': n, 'name': e("td a").eq(0).text(), 'mail': e("td a").eq(1).text(), 'posts': int(e("td").eq(2).text()), 'date': int(date), 'lastvisit': int(lastvisit)})
+            date = e("td").eq(4).text().split("/")
+            date = time.mktime(time.struct_time((int(date[2]),int(date[1]),int(date[0]),0,0,0,0,0,0)))
+
+            lastvisit = time.mktime(time.struct_time(2013,7,13,0,0,0,0,0,0)))
+            #le mail ???
+            save.users.append({'id': id, 'newid': n, 'name': e("td").eq(2).text(), 'mail': e("td").eq(1).text(), 'posts': int(e("td").eq(6).text()), 'date': int(date), 'lastvisit': int(lastvisit)})
             
             n += 1
             progress.update(n-2)
@@ -443,34 +397,6 @@ def set_left_right_id(forum=None, left=0):
         forum["right"] = curleft
     
     return curleft
-
-def get_connection():
-    logging.debug('Connexion en cours...')
-    logging.info('Connection au forum')
-    data = urlencode({'username': config.admin_name, 'password': config.admin_password, 'autologin': 1, 'redirect': '', 'login': 'Connexion'})
-    request = urllib2.Request(config.rooturl + '/login.forum', data)
-    request.add_header('User-Agent', 'Mozilla/5.0 (X11; Linux i686; rv:6.0.1) Gecko/20100101 Firefox/6.0.1')
-    urlopener.open(request)
-
-    logging.debug('Récupération du sid')
-    sid = None
-    for cookie in cookiejar:
-	if cookie.name[-3:] == "sid":
-	    sid = cookie.value
-
-    if sid == None:
-	logging.critical('Échec de la connection.')
-	sys.exit(1)
-    logging.debug('Récupération du tid')
-    tid = None
-    d = PyQuery(url=config.rooturl+'/forum', opener=fa_opener)
-    
-    f = urlopener.open(config.rooturl+'/admin/index.forum')
-    tid = urlparse(f.url).query
-
-    if tid == '':
-	logging.critical('Impossible de se récupérer le tid.')
-	sys.exit(1)
     
 class BarVar(progressbar.ProgressBarWidget):
     def update(self, pbar):
@@ -495,7 +421,7 @@ for cookie in cookiejar:
 if sid == None:
     logging.critical('Échec de la connection.')
     sys.exit(1)
-print sid
+
 logging.debug('Récupération du tid')
 d = PyQuery(url=config.rooturl+'/forum', opener=fa_opener)
 
