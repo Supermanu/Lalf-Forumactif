@@ -452,26 +452,6 @@ def get_connection():
     request.add_header('User-Agent', 'Mozilla/5.0 (X11; Linux i686; rv:6.0.1) Gecko/20100101 Firefox/6.0.1')
     urlopener.open(request)
 
-    logging.debug('Récupération du sid')
-    sid = None
-    for cookie in cookiejar:
-	if cookie.name[-3:] == "sid":
-	    sid = cookie.value
-
-    if sid == None:
-	logging.critical('Échec de la connection.')
-	sys.exit(1)
-    logging.debug('Récupération du tid')
-    tid = None
-    d = PyQuery(url=config.rooturl+'/forum', opener=fa_opener)
-    
-    f = urlopener.open(config.rooturl+'/admin/index.forum')
-    tid = urlparse(f.url).query
-
-    if tid == '':
-	logging.critical('Impossible de se récupérer le tid.')
-	sys.exit(1)
-    
 class BarVar(progressbar.ProgressBarWidget):
     def update(self, pbar):
         global n
