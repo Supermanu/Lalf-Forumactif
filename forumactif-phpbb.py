@@ -230,12 +230,8 @@ def get_topics():
             pages = int(result.group(1))
             topicsperpages = int(result.group(2))
         except:
-	    print("Probleme lors de la recup du nmbr de pages et/ou du nombre de topics par page")
-	    print(d.text())
             pages = 1
             topicsperpages = 0
-            print(pages)  
-	    print(topicsperpages)
         
         for page in range(0,pages):
             if page >= 1:
@@ -288,19 +284,16 @@ def get_users():
     except:
         pages = 1
         usersperpages = 0
-    print(usersperpages)
-    print(pages)
     memberslastpage = save.nbusers % usersperpages
-    print(memberslastpage)
     for page in range(0,pages):
-	print(page)
+	pageNumber = page*usersperpages
 	if page == pages-1 :
 	  usersperpages = memberslastpage # nombre de membres sur la dernière page
         if page >= 1:
-            d = PyQuery(url=config.rooturl + '/memberlist?mode=joined&order&username&start=' + str(page*usersperpages), opener=fa_opener)
+            d = PyQuery(url=config.rooturl + '/memberlist?mode=joined&order&username&start=' + str(pageNumber), opener=fa_opener)
             if "Veuillez entrer votre nom d'utilisateur et votre mot de passe pour vous connecter" in d.text() :
 		get_connection()
-		d = PyQuery(url=config.rooturl + '/memberlist?mode=joined&order&username&start=' + str(page*usersperpages), opener=fa_opener)
+		d = PyQuery(url=config.rooturl + '/memberlist?mode=joined&order&username&start=' + str(pageNumber), opener=fa_opener)
 	it = 0
 	alluserinthepage = 0
         for i in d('tbody tr'):
@@ -317,8 +310,21 @@ def get_users():
             date = time.mktime(time.struct_time((int(date[2]),int(date[1]),int(date[0]),0,0,0,0,0,0)))
 
             lastvisit = time.mktime(time.struct_time((2013,7,13,0,0,0,0,0,0)))
-            #le mail ???
-            save.users.append({'id': id, 'newid': n, 'name': e("td").eq(2).text(),'website': e("td").eq(8).e("img").attr("alt").text(), 'posts': int(e("td").eq(6).text()),'avatarurl': e("td").eq(1).e("img").attr("src").text(),'from': e("td").eq(3).text(), 'date': int(date), 'lastvisit': int(lastvisit)})
+            ###TO DO : le mail ???
+            website = e("td").eq(8)("img").attr("alt")
+            if e("td").eq(8)("img").attr("alt") == None :
+		  website = ""
+		  
+	    userFrom = e("td").eq(3).text()
+
+            logging.debug("Utilisateur : %s",e("td").eq(2).text())
+            logging.debug("From : %s", userFrom)
+            logging.debug("Avatar url : %s", e("td").eq(1)("img").attr("src"))
+            logging.debug("Website : %s", website)
+            
+            
+
+            save.users.append({'id': id, 'newid': n, 'name': e("td").eq(2).text(),'website': website, 'posts': int(e("td").eq(6).text()),'avatarurl': e("td").eq(1)("img").attr("src"),'from': userFrom, 'date': int(date), 'lastvisit': int(lastvisit)})
             
             n += 1
             progress.update(n-2)
@@ -392,8 +398,6 @@ def get_posts():
 	    else :
 		break
 	
-        print("Pour la récup de la 1ere page")
-        print(d.text())
         result = re.search('function do_pagination_start\(\)[^\}]*start = \(start > \d+\) \? (\d+) : start;[^\}]*start = \(start - 1\) \* (\d+);[^\}]*\}', d.text())
 
         try:
@@ -422,8 +426,7 @@ def get_posts():
 			loop_number += 1
 		    else :
 			break
-                print("Pour les pages suivantes")
-                #print(d.text())
+
             nbrpost = 0
             for i in d.find('tr.post'):
 		logging.debug('post : %d', nbrpost)
@@ -494,8 +497,8 @@ class BarVar(progressbar.ProgressBarWidget):
         global n
         return str(n)
 
-#etapes = [get_stats, get_forums, get_topics]
-etapes = [get_stats, get_forums, get_topics, get_users, get_smileys, get_posts]
+etapes = [get_stats, get_users]
+#etapes = [get_stats, get_forums, get_topics, get_users, get_smileys, get_posts]
 # Connection
 logging.info('Connection au forum')
 data = urlencode({'username': config.admin_name, 'password': config.admin_password, 'autologin': 1, 'redirect': '', 'login': 'Connexion'})
@@ -627,17 +630,17 @@ for user in save.users:
     "'a'",                                              #user_post_sortby_dir
     "'t'",                                              #user_topic_sortby_type
     "'d'",                                              #user_topic_sortby_dir
-    "''",#"'" + str(user["avatarurl"]) +"'",                  #user_avatar
+    "'" + str(user["avatarurl"]) +"'",                  #user_avatar
     "''",                                               #user_sig
     "''",                                               #user_sig_bbcode_uid
-    "''",#"'" + str(user["from"]) + "'",                      #user_from
+    "'" + phpbb.escape_var(user["from"]) + "'",                      #user_from
     "''",                                               #user_icq
     "''",                                               #user_aim
     "''",                                               #user_yim
     "''",                                               #user_msnm
     "''",                                               #user_jabber
     "'" + str(user["lastvisit"]) + "'",                 #user_lastvisit
-    "''",#"'" + str(user["website"]) + "'",                   #user_website
+    "'" + str(user["website"]) + "'",                   #user_website
     "''",                                               #user_occ
     "''",                                               #user_interests
     "''",                                               #user_actkey
@@ -683,7 +686,6 @@ set_left_right_id()
 
 it = 1
 for forum in save.forums:
-    #print(it)
     it += 1
     if forum["description"] == None :
 	descri = ''
@@ -706,9 +708,7 @@ sqlfile.write('TRUNCATE TABLE ' + config.table_prefix + 'topics_posted;\n')
 sqlfile.write('TRUNCATE TABLE ' + config.table_prefix + 'posts;\n\n')
 
 for topic in save.topics:
-    print(topic["id"])
     subposts = [i for i in save.posts if i["topic"] == topic["id"]]
-    print(len(subposts))
     if len(subposts) == 0 :
 	continue
     first_post = subposts[0]
