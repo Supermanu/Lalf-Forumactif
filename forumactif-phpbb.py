@@ -322,8 +322,6 @@ def get_users():
             logging.debug("Avatar url : %s", e("td").eq(1)("img").attr("src"))
             logging.debug("Website : %s", website)
             
-            
-
             save.users.append({'id': id, 'newid': n, 'name': e("td").eq(2).text(),'website': website, 'posts': int(e("td").eq(6).text()),'avatarurl': e("td").eq(1)("img").attr("src"),'from': userFrom, 'date': int(date), 'lastvisit': int(lastvisit)})
             
             n += 1
@@ -497,8 +495,7 @@ class BarVar(progressbar.ProgressBarWidget):
         global n
         return str(n)
 
-etapes = [get_stats, get_users]
-#etapes = [get_stats, get_forums, get_topics, get_users, get_smileys, get_posts]
+etapes = [get_stats, get_forums, get_topics, get_users, get_smileys, get_posts]
 # Connection
 logging.info('Connection au forum')
 data = urlencode({'username': config.admin_name, 'password': config.admin_password, 'autologin': 1, 'redirect': '', 'login': 'Connexion'})
