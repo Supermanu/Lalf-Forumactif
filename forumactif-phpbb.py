@@ -158,9 +158,9 @@ def get_forums():
         progress = progressbar.ProgressBar(widgets=[progressbar.SimpleProgress('/'), ' ', progressbar.Bar("#","[","]"), progressbar.Percentage()])
 
     d = PyQuery(url=config.rooturl + '/a-f1/', opener=fa_opener)
-    if "Veuillez entrer votre nom d'utilisateur et votre mot de passe pour vous connecter" in d.text() :
-	get_connection()
-	d = PyQuery(url=config.rooturl + '/a-f1/', opener=fa_opener)
+    #if "Veuillez entrer votre nom d'utilisateur et votre mot de passe pour vous connecter" in d.text() :
+	#get_connection()
+	#d = PyQuery(url=config.rooturl + '/a-f1/', opener=fa_opener)
     save.forums = []
     levels = {}
     n = 1
@@ -179,9 +179,9 @@ def get_forums():
         levels[level] = n
         
         d = PyQuery(url=config.rooturl+'/admin/index.forum?part=general&sub=general&mode=edit&fid=' + id + '&extended_admin=1&' + tid, opener=fa_opener)
-        if "Veuillez entrer votre nom d'utilisateur et votre mot de passe pour vous connecter" in d.text() :
-	    get_connection()
-	    d = PyQuery(url=config.rooturl+'/admin/index.forum?part=general&sub=general&mode=edit&fid=' + id + '&extended_admin=1&' + tid, opener=fa_opener)
+        #if "Veuillez entrer votre nom d'utilisateur et votre mot de passe pour vous connecter" in d.text() :
+	    #get_connection()
+	    #d = PyQuery(url=config.rooturl+'/admin/index.forum?part=general&sub=general&mode=edit&fid=' + id + '&extended_admin=1&' + tid, opener=fa_opener)
         try:
             description = d("textarea").text()
         except:
